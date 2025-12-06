@@ -1,108 +1,15 @@
-"""
-init_db.py — standalone database initializer for PIFAGOR
-Usage:
-    python3 services/db_writer/init_db.py
-"""
+"""Standalone database initializer for PIFAGOR."""
 
 from pathlib import Path
-import sqlite3
+import sys
 
 BASE_DIR = Path(__file__).resolve().parents[2]
-DB_PATH = BASE_DIR / "pifagor.db"
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
 
-
-def ensure_companies_schema(cur: sqlite3.Cursor) -> None:
-    """Создаёт таблицу companies и добивает недостающие колонки."""
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS companies (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        production_type TEXT,
-        address_full TEXT,
-        postal_code TEXT,
-        region TEXT,
-        district TEXT,
-        locality TEXT,
-        street TEXT,
-        parent_company_id INTEGER,
-        inn TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(name, region),
-        FOREIGN KEY (parent_company_id) REFERENCES companies(id)
-    );
-    """)
-
-    cur.execute("PRAGMA table_info(companies)")
-    columns = {row[1] for row in cur.fetchall()}
-    if "inn" not in columns:
-        cur.execute("ALTER TABLE companies ADD COLUMN inn TEXT")
-
-def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-
-    # === COMPANIES TABLE ===
-    ensure_companies_schema(cur)
-
-    # === EMPLOYEES TABLE ===
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS employees (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        company_id INTEGER NOT NULL,
-        role TEXT,
-        full_name TEXT,
-        phone TEXT,
-        email TEXT,
-        FOREIGN KEY(company_id) REFERENCES companies(id)
-    );
-    """)
-
-    # === WEBSITES TABLE ===
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS websites (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        company_id INTEGER NOT NULL,
-        url TEXT,
-        FOREIGN KEY(company_id) REFERENCES companies(id)
-    );
-    """)
-
-    # === RAW JSON LOG (новая архитектура) ===
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS results_raw (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        task_id TEXT,
-        company_id INTEGER,
-        raw_json TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-    """)
-
-    # === LEGAL ENRICHMENT TABLE ===
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS company_legal_enrichment (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        company_id INTEGER NOT NULL,
-        inn TEXT,
-        ogrn TEXT,
-        status TEXT,
-        full_name TEXT,
-        short_name TEXT,
-        registered_at TEXT,
-        address_full TEXT,
-        activity TEXT,
-        source TEXT DEFAULT 'api-fns.ru',
-        raw_json TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(company_id),
-        FOREIGN KEY(company_id) REFERENCES companies(id) ON DELETE CASCADE
-    );
-    """)
-
-    conn.commit()
-    conn.close()
-    print(f"📦 База инициализирована: {DB_PATH}")
+from services.db_writer.db_writer import init_db, DB_PATH  # noqa: E402
 
 if __name__ == "__main__":
     print("⚙ Инициализация базы PIFAGOR…")
     init_db()
+    print(f"📦 База инициализирована: {DB_PATH}")

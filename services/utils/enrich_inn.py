@@ -8,7 +8,7 @@ import re
 import sqlite3
 import time
 from pathlib import Path
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Tuple
 
 import requests
 
@@ -18,14 +18,14 @@ API_URL = "https://api-fns.ru/api/search"
 API_KEY = os.getenv("API_FNS_KEY")
 
 SESSION = requests.Session()
-SESSION.headers.update({"User-Agent": "PIFAGOR-Enricher/1.0"})
+SESSION.headers.update({"User-Agent": "PIFAGOR-Enricher/1.1"})
 
 
-def get_companies_without_inn(limit: int = 20) -> list[tuple[int, str, str]]:
+def get_companies_without_inn(limit: int = 20) -> List[Tuple[int, str, str, Optional[int]]]:
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT id, name, region FROM companies WHERE (inn IS NULL OR inn = '') LIMIT ?",
+        "SELECT id, name, region, holding_id FROM companies WHERE (inn IS NULL OR inn = '') LIMIT ?",
         (limit,),
     )
     rows = cursor.fetchall()
@@ -33,7 +33,7 @@ def get_companies_without_inn(limit: int = 20) -> list[tuple[int, str, str]]:
     return rows
 
 
-def save_inn(company_id: int, inn: str) -> None:
+def save_company_inn(company_id: int, inn: str) -> None:
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute(
@@ -69,7 +69,7 @@ def upsert_legal_enrichment(company_id: int, data: Dict[str, Any]) -> None:
         (
             company_id,
             data.get("ИНН"),
-            data.get("ОГРН") or data.get("ОГРН"),
+            data.get("ОГРН"),
             data.get("Статус"),
             data.get("НаимПолнЮЛ"),
             data.get("НаимСокрЮЛ"),
@@ -128,7 +128,7 @@ def enrich(limit: int = 20) -> None:
         return
 
     print(f"Найдено {len(companies)} компаний без ИНН. Начинаю обогащение…")
-    for company_id, name, region in companies:
+    for company_id, name, region, holding_id in companies:
         query = (name or "").strip()
         if not query:
             continue
@@ -140,7 +140,7 @@ def enrich(limit: int = 20) -> None:
                 continue
             inn = org.get("ИНН")
             if inn:
-                save_inn(company_id, inn)
+                save_company_inn(company_id, inn)
                 print(f"   ✅ ИНН {inn} сохранён")
             upsert_legal_enrichment(company_id, org)
             print("   📄 Юр-данные обновлены")

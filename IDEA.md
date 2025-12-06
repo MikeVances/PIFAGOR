@@ -34,16 +34,11 @@ PIFAGOR = **Poultry Intelligence Framework Archive of Organizations & Research**
    - processing  
    - mixed  
 3. **Извлекает данные из карточки**:
-   - название предприятия  
-   - адрес  
-   - контакты (ФИО, роль, телефоны, e-mail)  
-   - веб‑сайты  
-4. **Формирует структурированный JSON**, строго в одном формате.
-5. **Сохраняет данные в базу** с поддержкой:
-   - нескольких сотрудников,
-   - нескольких телефонов,
-   - холдинговой структуры,
-   - неограниченных филиалов.
+   - холдинг/группа, юрлицо и конкретная площадка (с адресами),
+   - контакты площадки (ФИО, роль, телефоны, e-mail),
+   - веб‑сайты и текстовое описание логотипов.
+4. **Формирует структурированный JSON** в формате «holding → company → site».
+5. **Сохраняет данные в базу**: холдинги, компании, площадки, контакты, сайты, исходные JSON, юридическое обогащение.
 
 ---
 
@@ -70,8 +65,13 @@ PIFAGOR = **Poultry Intelligence Framework Archive of Organizations & Research**
 
 ### 4. Хранилище и база данных
 
-- `services/db_writer/db_writer.py` отвечает за таблицы `companies`, `employees`, `websites`, `results_raw`.
-- Каждый submit сохраняет исходный JSON для аудита и отправляет уведомления при необходимости.
+- `services/db_writer/db_writer.py` теперь работает с иерархией: `holdings` → `companies` → `sites`, хранит контакты площадок, описания логотипов (`logo_hint`), ответы ФНС (`company_legal_enrichment`) и raw JSON.
+- Каждая запись хранит:
+  * Холдинг: название, ИНН, родитель, текстовое описание логотипа.
+  * Компания: юрлицо (название, ИНН, продукция, адрес, связь с холдингом).
+  * Площадка (site): имя, тип, адрес, контакты, сайты, `logo_hint`.
+  * `results_raw`: история исходных JSON с `company_id` и `site_id`.
+  * `company_legal_enrichment`: кэш ответов API ФНС.
 
 Такой файловый конвейер уже полностью работает локально: достаточно запустить `./starter.sh` и пробросить порт `7001` через ngrok.
 
@@ -79,28 +79,24 @@ PIFAGOR = **Poultry Intelligence Framework Archive of Organizations & Research**
 
 ## 🗂 Структуры данных (ключевое)
 
+### Holding
+- id, name, inn, parent_holding_id  
+- logo_hint — текстовое описание логотипа/бренда  
+
 ### Company
-- id  
-- name  
+- id, holding_id, name, inn  
 - production_type.primary  
-- address_full, region, district, locality  
-- parent_company_id (для холдингов)
+- address_full, region, district, locality
 
-### Employee
-- id  
-- company_id  
-- role  
-- full_name  
-- phones[]  
-- email  
-
-### Website
-- company_id  
-- url  
+### Site
+- id, company_id, name, site_type  
+- адресные поля, websites[]  
+- logo_hint — описание логотипа площадки  
+- contacts[] (site_contacts + phones, emails)
 
 ### Task / Result
 - task → file_path, status  
-- result → JSON, company_id, timestamp  
+- result → JSON, company_id, site_id, timestamp  
 
 ---
 

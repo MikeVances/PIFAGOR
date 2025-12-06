@@ -19,22 +19,36 @@ paths:
               $ref: "#/components/schemas/SubmitCardResultRequest"
             example:
               result:
-                company_name: "ООО \"Птицеферма\""
-                inn: "1654321980"
-                production_type:
-                  primary: "broiler"
-                address_full: "420000, Татарстан, г. Казань, ул. Ленина, 1"
-                postal_code: "420000"
-                region: "Татарстан"
-                district: "Лаишевский"
-                locality: "г. Казань"
-                street: "ул. Ленина, 1"
+                holding:
+                  name: "АО «Куриное Царство»"
+                  inn: "1651002812"
+                  logo_hint: "Красный логотип с буквами Ч и кругом"
+                  parent:
+                    name: "Группа Черкизово"
+                company:
+                  name: "АО «Турбаслинские бройлеры»"
+                  inn: "1651002812"
+                  production_type:
+                    primary: "broiler"
+                  region: "Республика Башкортостан"
+                  address_full: "452778, Республика Башкортостан, Туймазинский район, с. Дуслык, ул. Комсомольская, 29"
+                site:
+                  name: "Туймазинское ОП"
+                  site_type: "филиал"
+                  address_full: "452778, Республика Башкортостан, Туймазинский район, с. Дуслык, ул. Комсомольская, 29"
+                  region: "Республика Башкортостан"
+                  websites:
+                    - "https://www.cherkizovo.com"
+                  logo_hint: "Зелёный прямоугольник с белой буквой T"
                 contacts:
-                  - role: "Генеральный директор"
-                    full_name: "Иванов Иван Иванович"
-                    phone: ["+7 (999) 123-45-67"]
-                    email: "ivanov@example.com"
-                websites: ["www.example.com"]
+                  - role: "Руководитель"
+                    full_name: "Гайдук Вадим Сергеевич"
+                    phone: ["+7 (937) 161-94-39", "+7 (495) 775-05-55 доб. 30375"]
+                    email: "v.gayduk@cherkizovo.com"
+                  - role: "Ведущий зоотехник"
+                    full_name: "Давлетова Эльмира Нурулловна"
+                    phone: ["+7 (927) 324-63-08", "+7 (495) 775-05-55 доб. 30374"]
+                    email: "e.davletova@cherkizovo.com"
                 notes_raw: ""
                 _meta:
                   source_hint: "карточка предприятия"
@@ -61,49 +75,96 @@ components:
   schemas:
     SubmitCardResultRequest:
       type: object
-      description: Структурированный JSON компании по схеме PIFAGOR.
       properties:
         filename:
           type: string
           description: Имя файла из очереди (если известно).
         result:
           type: object
-          description: Объект компании.
           additionalProperties: false
+          required:
+            - company
+            - site
           properties:
-            company_name:
-              type: string
-            inn:
-              type: string
-              description: Идентификационный номер налогоплательщика
-            production_type:
+            holding:
               type: object
               additionalProperties: false
               properties:
-                primary:
+                name:
                   type: string
-                  description: Основной тип производства
-                  enum:
-                    - broiler
-                    - egg
-                    - rearing
-                    - parent_stock
-                    - turkey
-                    - duck
-                    - mixed
-                    - unknown
-            address_full:
-              type: string
-            postal_code:
-              type: string
-            region:
-              type: string
-            district:
-              type: string
-            locality:
-              type: string
-            street:
-              type: string
+                inn:
+                  type: string
+                parent:
+                  type: object
+                  additionalProperties: false
+                  properties:
+                    name:
+                      type: string
+                    inn:
+                      type: string
+            company:
+              type: object
+              additionalProperties: false
+              properties:
+                name:
+                  type: string
+                inn:
+                  type: string
+                production_type:
+                  type: object
+                  additionalProperties: false
+                  properties:
+                    primary:
+                      type: string
+                      description: Основной тип производства
+                      enum:
+                        - broiler
+                        - egg
+                        - rearing
+                        - parent_stock
+                        - turkey
+                        - duck
+                        - mixed
+                        - unknown
+                address_full:
+                  type: string
+                postal_code:
+                  type: string
+                region:
+                  type: string
+                district:
+                  type: string
+                locality:
+                  type: string
+                street:
+                  type: string
+            site:
+              type: object
+              additionalProperties: false
+              properties:
+                name:
+                  type: string
+                site_type:
+                  type: string
+                address_full:
+                  type: string
+                postal_code:
+                  type: string
+                region:
+                  type: string
+                district:
+                  type: string
+                locality:
+                  type: string
+                street:
+                  type: string
+                websites:
+                  type: array
+                  items:
+                    type: string
+                logo_hint:
+                  type: string
+                  description: Описание логотипа площадки/бренда
             contacts:
               type: array
               items:
@@ -120,10 +181,6 @@ components:
                       type: string
                   email:
                     type: string
-            websites:
-              type: array
-              items:
-                type: string
             notes_raw:
               type: string
             _meta:

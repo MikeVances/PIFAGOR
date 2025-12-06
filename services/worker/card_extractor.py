@@ -54,19 +54,36 @@ def _build_stub_result(image_path: Path) -> Dict[str, Any]:
     Возвращает минимальный JSON по договорённой структуре.
     """
     return {
-        "company_name": image_path.stem,
-        "production_type": {
-            "primary": "unknown"
+        "holding": {
+            "name": "",
+            "inn": "",
+            "logo_hint": "",
+            "parent": {},
         },
-        "inn": "",
-        "address_full": "",
-        "postal_code": "",
-        "region": "",
-        "district": "",
-        "locality": "",
-        "street": "",
+        "company": {
+            "name": image_path.stem,
+            "inn": "",
+            "production_type": {"primary": "unknown"},
+            "address_full": "",
+            "postal_code": "",
+            "region": "",
+            "district": "",
+            "locality": "",
+            "street": "",
+        },
+        "site": {
+            "name": image_path.stem,
+            "site_type": "",
+            "address_full": "",
+            "postal_code": "",
+            "region": "",
+            "district": "",
+            "locality": "",
+            "street": "",
+            "websites": [],
+            "logo_hint": "",
+        },
         "contacts": [],
-        "websites": [],
         "notes_raw": "",
         "_meta": {
             "source_file": str(image_path),
@@ -87,23 +104,34 @@ def _validate_result_structure(result: Dict[str, Any]) -> Dict[str, Any]:
         • Мы не "исправляем" контент, а только приводим структуру к ожидаемой форме.
     """
     # Обязательные "верхние" поля
-    result.setdefault("company_name", "")
-    result.setdefault("production_type", {})
-    result.setdefault("address_full", "")
-    result.setdefault("postal_code", "")
-    result.setdefault("region", "")
-    result.setdefault("district", "")
-    result.setdefault("locality", "")
-    result.setdefault("street", "")
-    result.setdefault("contacts", [])
-    result.setdefault("websites", [])
-    result.setdefault("notes_raw", "")
-
-    # production_type.primary
-    if not isinstance(result["production_type"], dict):
-        result["production_type"] = {"primary": "unknown"}
+    if "company" not in result:
+        result["company"] = {}
+    company = result["company"]
+    company.setdefault("name", "")
+    pt = company.get("production_type")
+    if not isinstance(pt, dict):
+        company["production_type"] = {"primary": "unknown"}
     else:
-        result["production_type"].setdefault("primary", "unknown")
+        pt.setdefault("primary", "unknown")
+
+    if "site" not in result:
+        result["site"] = {"name": company.get("name", "")}
+    site = result["site"]
+    if not isinstance(site, dict):
+        site = {"name": company.get("name", "")}
+        result["site"] = site
+    site.setdefault("name", company.get("name", ""))
+    site.setdefault("websites", [])
+    site.setdefault("logo_hint", "")
+
+    holding = result.get("holding")
+    if not isinstance(holding, dict):
+        holding = {}
+        result["holding"] = holding
+    holding.setdefault("logo_hint", "")
+
+    result.setdefault("contacts", [])
+    result.setdefault("notes_raw", "")
 
     # _meta можно использовать для отладки
     meta = result.get("_meta", {})

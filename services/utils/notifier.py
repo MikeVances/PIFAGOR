@@ -23,7 +23,7 @@ notifier.py — модуль уведомлений для системы PIFAGO
 import os
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 # Флаг включения/отключения уведомлений (по умолчанию включены).
 # Можно управлять через переменную окружения: PIFAGOR_NOTIFY_ENABLED=0
@@ -49,7 +49,13 @@ def _write_log_line(line: str) -> None:
         pass
 
 
-def notify_new_company(company_id: int, data: Dict[str, Any]) -> None:
+def notify_new_company(
+    company_id: int,
+    data: Dict[str, Any],
+    *,
+    site_id: Optional[int] = None,
+    holding_id: Optional[int] = None,
+) -> None:
     """
     Отправляет (пока что) консольное уведомление о добавлении/обновлении компании.
 
@@ -58,15 +64,31 @@ def notify_new_company(company_id: int, data: Dict[str, Any]) -> None:
         data: dict — JSON-структура с данными компании
     """
 
-    name = data.get("company_name") or "Без названия"
-    region = data.get("region") or "—"
-    prod_type = data.get("production_type", {}).get("primary", "unknown")
-    inn = data.get("inn") or "—"
+    company_block = data.get("company") or data
+    site_block = data.get("site") or {}
+    holding_block = data.get("holding") or {}
+
+    name = company_block.get("name") or data.get("company_name") or "Без названия"
+    site_name = site_block.get("name") or "—"
+    region = (
+        site_block.get("region")
+        or company_block.get("region")
+        or data.get("region")
+        or "—"
+    )
+    prod_type = (
+        (company_block.get("production_type") or {}).get("primary")
+        or (data.get("production_type") or {}).get("primary")
+        or "unknown"
+    )
+    inn = company_block.get("inn") or data.get("inn") or holding_block.get("inn") or "—"
+    holding_name = holding_block.get("name") or "—"
 
     # Формируем и записываем строку в лог
     log_line = (
         f"{datetime.utcnow().isoformat()}Z | "
-        f"id={company_id} | name={name} | region={region} | type={prod_type} | inn={inn}"
+        f"company_id={company_id} | name={name} | site={site_name} | region={region} | "
+        f"type={prod_type} | inn={inn} | holding={holding_name}"
     )
     _write_log_line(log_line)
 
@@ -87,6 +109,10 @@ def notify_new_company(company_id: int, data: Dict[str, Any]) -> None:
     print("📢 Новая компания добавлена в PIFAGOR!")
     print(f"🆔 ID: {company_id}")
     print(f"🏢 Название: {name}")
+    if holding_name != "—":
+        print(f"🏛 Холдинг: {holding_name}")
+    if site_name:
+        print(f"🏭 Площадка: {site_name}")
     print(f"📍 Регион: {region}")
     print(f"🐓 Тип производства: {prod_type}")
     print(f"🧾 ИНН: {inn}")
