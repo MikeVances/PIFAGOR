@@ -1,0 +1,174 @@
+openapi: 3.1.0
+info:
+  title: PIFAGOR Submit API
+  version: "1.0.0"
+
+servers:
+  - url: https://900e1808427a.ngrok-free.app
+
+paths:
+  /pifagor/submit_card_result:
+    post:
+      operationId: submitCardResult
+      summary: Сохранить результат обработки карточки
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitCardResultRequest"
+            example:
+              result:
+                company_name: "ООО \"Птицеферма\""
+                inn: "1654321980"
+                production_type:
+                  primary: "broiler"
+                address_full: "420000, Татарстан, г. Казань, ул. Ленина, 1"
+                postal_code: "420000"
+                region: "Татарстан"
+                district: "Лаишевский"
+                locality: "г. Казань"
+                street: "ул. Ленина, 1"
+                contacts:
+                  - role: "Генеральный директор"
+                    full_name: "Иванов Иван Иванович"
+                    phone: ["+7 (999) 123-45-67"]
+                    email: "ivanov@example.com"
+                websites: ["www.example.com"]
+                notes_raw: ""
+                _meta:
+                  source_hint: "карточка предприятия"
+      responses:
+        "200":
+          description: Результат сохранения
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubmitCardResultResponse"
+  /pifagor/push_next_card:
+    post:
+      operationId: pushNextCard
+      summary: Получить следующую карточку для обработки
+      responses:
+        "200":
+          description: Ссылка на файл карточки или причина отсутствия
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PushNextCardResponse"
+
+components:
+  schemas:
+    SubmitCardResultRequest:
+      type: object
+      description: Структурированный JSON компании по схеме PIFAGOR.
+      properties:
+        filename:
+          type: string
+          description: Имя файла из очереди (если известно).
+        result:
+          type: object
+          description: Объект компании.
+          additionalProperties: false
+          properties:
+            company_name:
+              type: string
+            inn:
+              type: string
+              description: Идентификационный номер налогоплательщика
+            production_type:
+              type: object
+              additionalProperties: false
+              properties:
+                primary:
+                  type: string
+                  description: Основной тип производства
+                  enum:
+                    - broiler
+                    - egg
+                    - rearing
+                    - parent_stock
+                    - turkey
+                    - duck
+                    - mixed
+                    - unknown
+            address_full:
+              type: string
+            postal_code:
+              type: string
+            region:
+              type: string
+            district:
+              type: string
+            locality:
+              type: string
+            street:
+              type: string
+            contacts:
+              type: array
+              items:
+                type: object
+                additionalProperties: false
+                properties:
+                  role:
+                    type: string
+                  full_name:
+                    type: string
+                  phone:
+                    type: array
+                    items:
+                      type: string
+                  email:
+                    type: string
+            websites:
+              type: array
+              items:
+                type: string
+            notes_raw:
+              type: string
+            _meta:
+              type: object
+              additionalProperties: false
+              properties:
+                source_hint:
+                  type: string
+      required:
+        - result
+
+    SubmitCardResultResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        company_id:
+          type: integer
+          nullable: true
+        error_message:
+          type: string
+          nullable: true
+        queue:
+          type: object
+          nullable: true
+      required:
+        - status
+
+    PushNextCardResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        pushed:
+          type: boolean
+          nullable: true
+        filename:
+          type: string
+          nullable: true
+        file_url:
+          type: string
+          format: uri
+          nullable: true
+        reason:
+          type: string
+          nullable: true
+      required:
+        - ok

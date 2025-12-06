@@ -1,0 +1,7 @@
+# PIFAGOR
+/storage/incoming_photos/
+/storage/archive_photos/
+/storage/error_photos/
+/storage/results_json/
+/logs/
+bot/uploads/
