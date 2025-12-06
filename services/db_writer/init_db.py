@@ -78,6 +78,27 @@ def init_db():
     );
     """)
 
+    # === LEGAL ENRICHMENT TABLE ===
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS company_legal_enrichment (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        company_id INTEGER NOT NULL,
+        inn TEXT,
+        ogrn TEXT,
+        status TEXT,
+        full_name TEXT,
+        short_name TEXT,
+        registered_at TEXT,
+        address_full TEXT,
+        activity TEXT,
+        source TEXT DEFAULT 'api-fns.ru',
+        raw_json TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(company_id),
+        FOREIGN KEY(company_id) REFERENCES companies(id) ON DELETE CASCADE
+    );
+    """)
+
     conn.commit()
     conn.close()
     print(f"📦 База инициализирована: {DB_PATH}")

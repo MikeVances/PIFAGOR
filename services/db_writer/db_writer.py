@@ -124,6 +124,27 @@ def init_db() -> None:
     );
     """)
 
+    # Таблица обогащения юридическими данными
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS company_legal_enrichment (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        company_id INTEGER NOT NULL,
+        inn TEXT,
+        ogrn TEXT,
+        status TEXT,
+        full_name TEXT,
+        short_name TEXT,
+        registered_at TEXT,
+        address_full TEXT,
+        activity TEXT,
+        source TEXT DEFAULT 'api-fns.ru',
+        raw_json TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(company_id),
+        FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+    );
+    """)
+
     # Таблица сырых JSON результатов / истории задач
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS results_raw (
